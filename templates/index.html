@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>موقع الذكاء الاصطناعي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+<style>
+/* هنا ضع كل CSS التزيين والماتريكس من النسخة السابقة */
+:root {
+    --primary-dark: #121212;
+    --secondary-dark: #1e1e1e;
+    --accent-red: #e53935;
+    --accent-gray: #2d2d2d;
+    --text-primary: #f5f5f5;
+    --text-secondary: #b0b0b0;
+    --border-color: #333;
+    --matrix-color: #450a0a;
+}
+* { font-family: "Cairo", sans-serif; margin:0;padding:0;box-sizing:border-box; }
+body { background-color:black; color:var(--text-primary); min-height:100vh; overflow-x:hidden; }
+body::-webkit-scrollbar{ display:none; } body{scrollbar-width:none;}
+canvas#matrix{ position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none; }
+#container{ max-width:600px;width:90%;margin:50px auto;background:rgba(26,26,46,0.9);border-radius:20px;padding:50px 40px;text-align:center; position:relative;backdrop-filter: saturate(180%) blur(20px);}
+#container:hover{transform:scale(1.05);box-shadow:0 20px 50px rgba(0,0,0,0.8);}
+h1{ margin-bottom:30px;font-weight:900;font-size:3rem;letter-spacing:3px;background: linear-gradient(90deg,#ff7e5f,#feb47b,#86a8e7,#91eae4);background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:textGradient 8s ease infinite;text-shadow: 0 0 10px rgba(255,126,95,0.7),0 0 20px rgba(254,180,123,0.6);}
+@keyframes textGradient{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+textarea{ width:100%; height:130px; border-radius:15px; border:none; padding:18px 22px; font-size:19px; resize:vertical; box-shadow: inset 0 0 12px #6c63ffaa, 0 0 15px #8f94fb88; background-color:#2e2e5c; color:#f0f0f0; outline-offset:4px;}
+textarea::placeholder{ color:#bbbbee; font-style:italic; }
+textarea:focus{ outline:none; box-shadow: inset 0 0 20px #a9a9ff, 0 0 30px #b4b9ff; background-color:#3b3b7e; }
+button{ margin-top:25px; padding:16px 50px; font-size:22px; font-weight:700; color:#fff; background: linear-gradient(45deg,#6c63ff,#8f94fb); border:none; border-radius:35px; cursor:pointer; box-shadow:0 8px 20px #6c63ffaa,0 0 20px #8f94fbcc; transition: all 0.3s ease; position:relative; overflow:hidden;}
+button::before{ content:""; position:absolute; left:-60%; top:0; width:200%; height:100%; background:linear-gradient(120deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.3) 100%); transform: skewX(-25deg); transition:left 0.7s ease; pointer-events:none; z-index:1;}
+button:hover::before{ left:100%; } button:hover{ background: linear-gradient(45deg,#a29bfe,#b4b9ff); transform: translateY(-5px); box-shadow:0 15px 30px #8f94fbdd,0 0 30px #a29bfeee;} button:active{ transform:translateY(-2px); box-shadow:0 8px 20px #6c63ffcc,0 0 20px #8f94fbcc; }
+#answer{ margin-top:35px; min-height:110px; padding:25px 30px; border-radius:20px; background: linear-gradient(145deg,#29295e,#1a1a3b); font-size:22px; line-height:1.7; color:#c9d1ff; box-shadow: inset 0 0 30px #25254e, 0 5px 25px rgba(0,0,60,0.8); white-space:pre-wrap; text-align:right; user-select:text; position:relative; overflow:hidden; font-weight:700; letter-spacing:0.8px; }
+#answer.loading{ color:#aaaaff; font-style:italic; } 
+#answer.loading::after{ content:""; position:absolute; top:50%; left:50%; margin-left:-14px; margin-top:-14px; width:28px; height:28px; border:4px solid #aaaaff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; z-index:10;}
+footer{ margin-top:50px; text-align:center; color:var(--text-secondary); font-weight:600; font-size:16px; text-shadow:0 0 6px #7d7dff88; }
+footer span.highlight{ color: var(--accent-red); font-weight:900; text-shadow:0 0 8px #ff79c6cc,0 0 15px #ff79c6bb; }
+@media(max-width:480px){ h1{ font-size:2.2rem; } button{ font-size:20px; padding:14px 35px; } #answer{ font-size:18px; padding:20px 22px; min-height:90px; } textarea{ height:110px; font-size:16px; padding:14px 18px; } }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div id="container">
+    <h1>اسأل الذكاء الاصطناعي</h1>
+    <textarea id="question" placeholder="اكتب سؤالك هنا..."></textarea>
+    <button onclick="sendQuestion()">اسأل الآن</button>
+    <div id="answer"></div>
+</div>
+
+<footer>
+تم تطوير هذا الموقع بواسطة فريق <span class="highlight">XZA</span> — أنا نموذج من <span class="highlight">ChatGPT</span> نسخة <span class="highlight">Chat_xza</span>
+</footer>
+
+<script>
+// Matrix effect
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const letters = 'ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي'.split('');
+const fontSize = 20;
+const columns = canvas.width / fontSize;
+const drops = Array.from({length:columns}).map(()=>1);
+function drawMatrix(){
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = 'rgba(69,10,10,0.9)';
+    ctx.font = fontSize+'px Cairo';
+    for(let i=0;i<drops.length;i++){
+        const text = letters[Math.floor(Math.random()*letters.length)];
+        ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+        if(drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+        drops[i]++;
+    }
+}
+setInterval(drawMatrix,50);
+
+async function typeText(element,text,delay=30){
+    element.textContent='';
+    for(let i=0;i<text.length;i++){
+        element.innerHTML+=`<span style="color: rgb(${150+105*(i/text.length)},${150+105*(i/text.length)},255)">${text[i]}</span>`;
+        await new Promise(r=>setTimeout(r,delay));
+        element.scrollTop=element.scrollHeight;
+    }
+}
+
+async function sendQuestion(){
+    const questionInput=document.getElementById('question');
+    const answerDiv=document.getElementById('answer');
+    const question=questionInput.value.trim();
+    if(!question){answerDiv.textContent='يرجى إدخال السؤال أولاً.'; return;}
+    answerDiv.classList.add('loading');
+    answerDiv.textContent='جارٍ التفكير... ⏳';
+    
+    try{
+        const res=await fetch('/ask',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({question})
+        });
+        const data = await res.json();
+        answerDiv.classList.remove('loading');
+        await typeText(answerDiv, data.answer);
+    }catch(e){
+        answerDiv.classList.remove('loading');
+        answerDiv.textContent='❌ حدث خطأ في الاتصال بالخادم.';
+    }
+}
+</script>
+
+</body>
+</html>
